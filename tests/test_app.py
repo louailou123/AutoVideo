@@ -3,18 +3,45 @@ import tkinter as tk
 
 import pytest
 
-from autovideo.app import App
+from autovideo.app import App, create_root
 from autovideo.core import Cancelled
 
 TEXTS = "You yawn.\nYour friend yawns too.\nBut why?\n"
 
 
-@pytest.fixture
-def root():
-    r = tk.Tk()
+@pytest.fixture(scope="session")
+def _session_root():
+    # One Tk for the whole run: starting Tk reads files that antivirus can briefly lock.
+    r = create_root()
     r.withdraw()
     yield r
     r.destroy()
+
+
+@pytest.fixture
+def root(_session_root):
+    yield _session_root
+    for child in _session_root.winfo_children():
+        child.destroy()
+
+
+def test_create_root_retries_a_briefly_locked_tk(monkeypatch):
+    calls = []
+
+    def flaky_tk():
+        calls.append(1)
+        if len(calls) < 3:
+            raise tk.TclError("couldn't read file .../ttk/cursors.tcl")
+        return "root"
+
+    monkeypatch.setattr("autovideo.app.time.sleep", lambda s: None)
+    assert create_root(factory=flaky_tk) == "root" and len(calls) == 3
+
+    def always_locked():
+        raise tk.TclError("still locked")
+
+    with pytest.raises(tk.TclError):
+        create_root(factory=always_locked)
 
 
 @pytest.fixture

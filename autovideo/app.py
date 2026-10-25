@@ -8,6 +8,7 @@ import queue
 import subprocess
 import sys
 import threading
+import time
 import tkinter as tk
 import traceback
 from collections.abc import Callable
@@ -22,6 +23,19 @@ from autovideo.pipeline import Job, check, make_video
 LANGUAGES = {"Detect automatically": None, "English": "en", "French": "fr", "Arabic": "ar"}
 MODEL_NAMES = {label: name for name, label in MODELS.items()}
 POLL_MS = 100
+
+
+def create_root(attempts: int = 3, factory: Callable[[], Any] = tk.Tk) -> Any:
+    """Start Tk, retrying briefly: on Windows, antivirus can lock Tk's own files for a moment
+    ("couldn't read file .../tk8.6/ttk/cursors.tcl")."""
+    for attempt in range(attempts):
+        try:
+            return factory()
+        except tk.TclError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(0.5 * (attempt + 1))
+    raise AssertionError("unreachable")
 
 
 def default_settings_path() -> Path:
@@ -325,7 +339,7 @@ def main() -> None:
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
         except (AttributeError, OSError):
             pass
-    root = tk.Tk()
+    root = create_root()
     root.title("AutoVideo — images + voice → video")
     root.geometry("980x640")
     root.minsize(820, 520)

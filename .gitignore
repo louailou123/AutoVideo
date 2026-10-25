@@ -1,0 +1,21 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# your media and outputs never go into git
+*.mp4
+*.mp3
+*.wav
+*.m4a
+*.aac
+*.flac
+*.ogg
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.srt
+*.timeline.txt
+*.images.txt

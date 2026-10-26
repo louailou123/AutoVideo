@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "faster-whisper>=1.1",
+    "av<19",  # PyAV 19 refuses the metadata_errors argument faster-whisper 1.2 passes to av.open
 ]
 
 [project.gui-scripts]

@@ -1,6 +1,7 @@
 import json
 import shutil
 import subprocess
+import wave
 from dataclasses import dataclass, field
 
 import pytest
@@ -131,6 +132,19 @@ def test_hear_can_be_cancelled(tmp_path):
     with pytest.raises(Cancelled):
         hear(tmp_path / "v.wav", None, "small", lambda f: None, lambda: True,
              model_factory=FakeModel)  # fmt: skip
+
+
+def test_whisper_decodes_a_real_voice_file(tmp_path):
+    """The real decoding step (PyAV), no model needed: catches faster-whisper/PyAV mismatches."""
+    from faster_whisper.audio import decode_audio
+
+    voice = tmp_path / "voice.wav"
+    with wave.open(str(voice), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(16000)
+        w.writeframes(b"\0\0" * 16000)  # 1 s of silence
+    assert len(decode_audio(str(voice))) == 16000
 
 
 # ------------------------------------------------------------------ real FFmpeg

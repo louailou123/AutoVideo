@@ -47,6 +47,11 @@ uv run autovideo
    lines are used). The number of texts must equal the number of images.
 4. **Check**, then **Make video**. **Cancel** stops at any time; **Open folder** shows the result.
 
+**Voice volume** makes the voice in the video louder (+) or quieter (−), in dB: ±3 is a small
+change, ±6 a clear one. A louder voice is held just under the maximum so it never crackles; if
+it starts to sound squashed, go back down a step. Only the video's sound changes, not the
+listening.
+
 The fields are remembered between runs.
 
 ## Choosing the listening model

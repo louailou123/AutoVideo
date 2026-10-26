@@ -125,6 +125,18 @@ def test_ffmpeg_command_shape(tmp_path):
     assert capped[capped.index("-frames:v") + 1] == "138"
 
 
+def test_ffmpeg_command_voice_volume():
+    def af(**kwargs):
+        cmd = ffmpeg_command("ffmpeg", Path("l"), Path("v"), Path("o"), **kwargs)
+        return cmd[cmd.index("-af") + 1]
+
+    assert af() == "apad"
+    assert af(volume_db=-6) == "volume=-6dB,apad"
+    louder = af(volume_db=4.5)
+    assert louder.startswith("volume=4.5dB,alimiter=") and louder.endswith(",apad")
+    assert "level=0" in louder  # the limiter only catches peaks, it never re-levels the voice
+
+
 @pytest.mark.parametrize(("line", "seconds"), [
     ("out_time_us=1500000", 1.5), ("out_time_ms=2500000", 2.5),
     ("out_time=00:01:02.500000", 62.5), ("frame=10", None), ("out_time_us=N/A", None),

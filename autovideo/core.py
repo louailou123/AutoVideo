@@ -191,18 +191,26 @@ def ffmpeg_command(
     fps: int = 30,
     preset: str = "medium",
     total_frames: int | None = None,
+    volume_db: float = 0.0,
 ) -> list[str]:
     """Images (letterboxed to `size`, never stretched) + the voice, padded with silence to the
     end of the last image. Progress is written to stdout (parse_progress). `total_frames` caps
-    the video at exactly the planned length (FFmpeg 8 shows the repeated last entry again)."""
+    the video at exactly the planned length (FFmpeg 8 shows the repeated last entry again).
+    `volume_db` makes the voice louder (+) or quieter (-); a louder voice goes through a
+    limiter so its peaks stay just under the maximum instead of crackling."""
     w, h = size
     vf = (
         f"scale={w}:{h}:force_original_aspect_ratio=decrease,"
         f"pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={fps},format=yuv420p"
     )
+    af = ["apad"]
+    if volume_db > 0:
+        af.insert(0, "alimiter=limit=0.89:level=0:latency=1")  # peaks at -1 dB, timing kept
+    if volume_db:
+        af.insert(0, f"volume={volume_db:g}dB")
     return [
         ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", str(list_file), "-i", str(voice),
-        "-vf", vf, "-af", "apad", "-shortest",
+        "-vf", vf, "-af", ",".join(af), "-shortest",
         "-c:v", "libx264", "-preset", preset, "-crf", "18",
         "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart",
         *(["-frames:v", str(total_frames)] if total_frames else []),

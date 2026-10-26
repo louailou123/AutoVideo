@@ -41,6 +41,7 @@ class Job:
     language: str | None = None  # "en", "fr", "ar"; None = detect
     model: str = "small"
     preset: str = "medium"  # FFmpeg x264 preset: "veryfast" encodes faster, bigger file
+    volume_db: float = 0.0  # voice in the video: +6 louder, -6 quieter (listening is unchanged)
 
 
 @dataclass
@@ -142,6 +143,7 @@ def make_video(
         fps=plan.fps,
         preset=job.preset,
         total_frames=sum(plan.frames),
+        volume_db=job.volume_db,
     )
     run(cmd, plan.total_seconds, lambda f: report("progress", ("Making the video", f)),
         should_stop)  # fmt: skip

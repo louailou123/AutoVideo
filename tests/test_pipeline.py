@@ -1,4 +1,5 @@
 import json
+import re
 import shutil
 import subprocess
 import wave
@@ -174,6 +175,31 @@ def test_real_render_matches_the_plan(job):
     assert abs(int(video["nb_frames"]) - 138) <= 1  # 4.6 s at 30 fps
     assert float(info["format"]["duration"]) == pytest.approx(4.6, abs=0.1)
     assert any(kind == "Making the video" for kind, _ in report.of("progress"))
+
+
+def _max_volume(path):
+    """Peak level of a file's sound in dB (0 = the loudest a file can hold)."""
+    done = subprocess.run(["ffmpeg", "-i", str(path), "-af", "volumedetect", "-f", "null", "-"],
+                          capture_output=True, text=True, check=True)  # fmt: skip
+    return float(re.search(r"max_volume: (-?[\d.]+) dB", done.stderr).group(1))
+
+
+@pytest.mark.ffmpeg
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="FFmpeg not installed")
+def test_real_render_changes_the_voice_volume_without_clipping(job):
+    for n in (1, 2, 3):
+        _ffmpeg("-f", "lavfi", "-i", "color=c=black:s=320x240", "-frames:v", "1",
+                str(job.images / f"{n:04d}.png"))  # fmt: skip
+    _ffmpeg("-f", "lavfi", "-i", "sine=frequency=440:duration=4.1", str(job.voice))  # peak -18 dB
+    job.preset = "ultrafast"
+
+    job.volume_db = -6
+    out = make_video(job, Recorder(), lambda: False, hear=fake_hear, run=run_ffmpeg)
+    assert _max_volume(out) == pytest.approx(-24, abs=1)
+
+    job.volume_db = 20  # -18 + 20 = +2 dB would clip: the limiter keeps the peaks just below
+    out = make_video(job, Recorder(), lambda: False, hear=fake_hear, run=run_ffmpeg)
+    assert -2 < _max_volume(out) < -0.5
 
 
 @pytest.mark.ffmpeg

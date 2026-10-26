@@ -22,6 +22,7 @@ from autovideo.pipeline import Job, check, make_video
 
 LANGUAGES = {"Detect automatically": None, "English": "en", "French": "fr", "Arabic": "ar"}
 MODEL_NAMES = {label: name for name, label in MODELS.items()}
+VOLUMES = [f"{db:+d}" if db else "0" for db in range(-20, 21)]  # dB: "-20" … "0" … "+20"
 POLL_MS = 100
 
 
@@ -65,6 +66,7 @@ class App:
         self.language_var = tk.StringVar(value="Detect automatically")
         self.model_var = tk.StringVar(value=MODELS["small"])
         self.fast_var = tk.BooleanVar(value=False)
+        self.volume_var = tk.StringVar(value="0")
         self._build()
         self._load_settings()
         self.root.after(POLL_MS, self._poll)
@@ -95,9 +97,14 @@ class App:
         ttk.Label(options, text="Listening model").pack(side="left")
         ttk.Combobox(options, textvariable=self.model_var, values=list(MODEL_NAMES),
                      state="readonly", width=40).pack(side="left", padx=(6, 16))  # fmt: skip
-        ttk.Checkbutton(frame, text="Faster encoding (bigger file, nearly the same quality)",
-                        variable=self.fast_var).grid(row=5, column=0, columnspan=3,
-                                                     sticky="w")  # fmt: skip
+        sound = ttk.Frame(frame)
+        sound.grid(row=5, column=0, columnspan=3, sticky="w")
+        ttk.Label(sound, text="Voice volume").pack(side="left")
+        ttk.Spinbox(sound, textvariable=self.volume_var, values=VOLUMES, state="readonly",
+                    wrap=False, width=5).pack(side="left", padx=(6, 4))  # fmt: skip
+        ttk.Label(sound, text="dB (+ louder, − quieter)").pack(side="left", padx=(0, 16))
+        ttk.Checkbutton(sound, text="Faster encoding (bigger file, nearly the same quality)",
+                        variable=self.fast_var).pack(side="left")  # fmt: skip
 
         actions = ttk.Frame(frame)
         actions.grid(row=6, column=0, columnspan=3, sticky="ew", pady=(8, 4))
@@ -166,6 +173,7 @@ class App:
             language=LANGUAGES.get(self.language_var.get()),
             model=MODEL_NAMES.get(self.model_var.get(), "small"),
             preset="veryfast" if self.fast_var.get() else "medium",
+            volume_db=float(self.volume_var.get()),
         )
 
     # ------------------------------------------------------------ actions
@@ -291,7 +299,7 @@ class App:
             "images": self.images_var.get(), "voice": self.voice_var.get(),
             "texts": self.texts_var.get(), "out": self.out_var.get(),
             "language": self.language_var.get(), "model": self.model_var.get(),
-            "fast": self.fast_var.get(),
+            "fast": self.fast_var.get(), "volume": self.volume_var.get(),
         }  # fmt: skip
         try:
             self._settings_path.parent.mkdir(parents=True, exist_ok=True)
@@ -312,6 +320,8 @@ class App:
         if data.get("model") in MODEL_NAMES:
             self.model_var.set(data["model"])
         self.fast_var.set(bool(data.get("fast", False)))
+        if data.get("volume") in VOLUMES:
+            self.volume_var.set(data["volume"])
 
     # ------------------------------------------------------------ inspection (tests)
 

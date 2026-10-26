@@ -106,11 +106,12 @@ def test_make_runs_in_the_background_and_shows_progress(root, files):
     fill(app, files)
     app.language_var.set("French")
     app.fast_var.set(True)
+    app.volume_var.set("+6")
     app.make()
     assert app.is_running()
     wait(root, app)
     job = seen["job"]
-    assert (job.language, job.model, job.preset) == ("fr", "small", "veryfast")
+    assert (job.language, job.model, job.preset, job.volume_db) == ("fr", "small", "veryfast", 6)
     log = app.log_text()
     assert "Listening…" in log and "You yawn." in log and "Video ready" in log
     assert app.progress_value() == 100
@@ -147,7 +148,15 @@ def test_choices_are_remembered(root, files):
     app = make_app(root, files)
     fill(app, files)
     app.language_var.set("Arabic")
+    app.volume_var.set("-3")
     app.save_settings()
     again = make_app(root, files)
     assert again.voice_var.get() == str(files / "voice.mp3")
     assert again.language_var.get() == "Arabic"
+    assert again.volume_var.get() == "-3"
+
+
+def test_voice_volume_starts_unchanged(root, files):
+    app = make_app(root, files)
+    fill(app, files)
+    assert app.volume_var.get() == "0" and app.job().volume_db == 0

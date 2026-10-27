@@ -3,7 +3,7 @@ import tkinter as tk
 
 import pytest
 
-from autovideo.app import App, create_root
+from autovideo.app import ICON, App, create_root
 from autovideo.core import Cancelled
 
 TEXTS = "You yawn.\nYour friend yawns too.\nBut why?\n"
@@ -154,6 +154,10 @@ def test_choices_are_remembered(root, files):
     assert again.voice_var.get() == str(files / "voice.mp3")
     assert again.language_var.get() == "Arabic"
     assert again.volume_var.get() == "-3"
+
+
+def test_the_app_icon_ships_with_the_package():
+    assert ICON.is_file() and ICON.read_bytes()[:4] == b"\0\0\1\0"  # a Windows .ico
 
 
 def test_voice_volume_starts_unchanged(root, files):

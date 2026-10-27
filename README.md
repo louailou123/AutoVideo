@@ -14,7 +14,18 @@ It also writes, next to the video:
 - `final_video.timeline.txt` — when each image appears, to check the timing;
 - `final_video.srt` — subtitles (one per image), for YouTube or CapCut.
 
-## Setup (once)
+## Install on Windows
+
+Run `AutoVideo-Setup-<version>.exe` (see [Build the installer](#build-the-installer)). It
+installs for your user only (no administrator rights), with FFmpeg inside, and adds AutoVideo to
+the Start menu and, if you tick it, the desktop. Nothing else to install. Uninstall from
+Windows Settings › Apps.
+
+- The installer is not signed, so Windows may say "Windows protected your PC": click
+  **More info**, then **Run anyway**.
+- The first video with a listening model downloads it (once, needs internet).
+
+## Setup from the source (once)
 
 ```bash
 winget install --id Gyan.FFmpeg -e
@@ -77,3 +88,21 @@ uv run ruff check
 `autovideo/core.py` holds the timing logic (pure functions, fully tested), `hearing.py` the
 Whisper step, `pipeline.py` one video from start to end, `app.py` the window (presentation only:
 the work runs on a background thread, so the window never freezes).
+
+### Build the installer
+
+Needs FFmpeg (above) and Inno Setup, once:
+
+```bash
+winget install --id JRSoftware.InnoSetup -e --scope user
+```
+
+Then:
+
+```bash
+powershell -ExecutionPolicy Bypass -File packaging\build.ps1
+```
+
+It writes `dist\AutoVideo\` (the app, made by PyInstaller from `packaging\autovideo.spec`) and
+`dist\AutoVideo-Setup-<version>.exe` (the installer, from `packaging\installer.iss`), in about
+5 minutes. The version comes from `pyproject.toml`.

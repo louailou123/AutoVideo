@@ -2,6 +2,7 @@
 (pipeline.make_video), which sends events through a queue that the window polls, so the
 window never freezes."""
 
+import contextlib
 import json
 import os
 import queue
@@ -23,6 +24,7 @@ from autovideo.pipeline import Job, check, make_video
 LANGUAGES = {"Detect automatically": None, "English": "en", "French": "fr", "Arabic": "ar"}
 MODEL_NAMES = {label: name for name, label in MODELS.items()}
 VOLUMES = [f"{db:+d}" if db else "0" for db in range(-20, 21)]  # dB: "-20" … "0" … "+20"
+ICON = Path(__file__).with_name("autovideo.ico")
 POLL_MS = 100
 
 
@@ -350,6 +352,8 @@ def main() -> None:
         except (AttributeError, OSError):
             pass
     root = create_root()
+    with contextlib.suppress(tk.TclError):  # without it, the default Tk icon is fine
+        root.iconbitmap(default=str(ICON))
     root.title("AutoVideo — images + voice → video")
     root.geometry("980x640")
     root.minsize(820, 520)

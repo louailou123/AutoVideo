@@ -75,6 +75,14 @@ def check(job: Job) -> Checked:
     return Checked(images=images, texts=texts, problems=problems)
 
 
+def find_ffmpeg() -> str | None:
+    """The FFmpeg shipped inside the installed app (PyInstaller), else the one on PATH."""
+    bundled = Path(getattr(sys, "_MEIPASS", ".")) / "ffmpeg" / "ffmpeg.exe"
+    if getattr(sys, "frozen", False) and bundled.is_file():
+        return str(bundled)
+    return shutil.which("ffmpeg")
+
+
 def run_ffmpeg(
     cmd: list[str],
     total_seconds: float,
@@ -114,7 +122,7 @@ def make_video(
     checked = check(job)
     if checked.problems:
         raise ValueError("\n".join(checked.problems))
-    ffmpeg = ffmpeg or shutil.which("ffmpeg")
+    ffmpeg = ffmpeg or find_ffmpeg()
     if not ffmpeg:
         raise FileNotFoundError(INSTALL_FFMPEG)
 

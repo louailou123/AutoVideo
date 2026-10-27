@@ -2,6 +2,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 import wave
 from dataclasses import dataclass, field
 
@@ -9,7 +10,7 @@ import pytest
 
 from autovideo.core import Cancelled
 from autovideo.hearing import hear
-from autovideo.pipeline import Job, check, make_video, run_ffmpeg
+from autovideo.pipeline import Job, check, find_ffmpeg, make_video, run_ffmpeg
 
 TEXTS = "You yawn.\nYour friend yawns too.\nBut why?\n"
 HEARD = [(" You", 0.0), (" yawn.", 0.3), (" Your", 1.2), (" friend", 1.45),
@@ -91,6 +92,17 @@ def test_make_video_without_ffmpeg_says_how_to_install(job, monkeypatch):
     monkeypatch.setattr(shutil, "which", lambda name: None)
     with pytest.raises(FileNotFoundError, match="winget install"):
         make_video(job, Recorder(), lambda: False, hear=fake_hear, run=pytest.fail)
+
+
+def test_find_ffmpeg_prefers_the_copy_inside_the_installed_app(tmp_path, monkeypatch):
+    bundled = tmp_path / "ffmpeg" / "ffmpeg.exe"
+    bundled.parent.mkdir()
+    bundled.write_bytes(b"exe")
+    monkeypatch.setattr(shutil, "which", lambda name: "C:/on/path/ffmpeg.exe")
+    assert find_ffmpeg() == "C:/on/path/ffmpeg.exe"  # run from the source: the one on PATH
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "_MEIPASS", str(tmp_path), raising=False)
+    assert find_ffmpeg() == str(bundled)
 
 
 # ------------------------------------------------------------------ hearing (fake model)
